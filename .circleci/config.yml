@@ -4,7 +4,7 @@
 #
 version: 2
 jobs:
-  build:
+  run-test:
     docker:
        - image: circleci/ruby:2.4.1-node-browsers
     working_directory: ~/repo
@@ -27,3 +27,24 @@ jobs:
           name: run tests
           command: |
             bundle exec rails test:system
+  docker-push:
+    machine: true
+    steps:
+      - checkout
+      - run:
+          name: Build Docker image
+          command: |
+            docker build -t $DOCKER_ID/sample-rails-app:$CIRCLE_BRANCH .
+      - run:
+          name: Push to DockerHUB
+          command: |
+            docker login -u $DOCKER_ID -p $DOCKER_PASS
+            docker push $DOCKER_ID/sample-rails-app:$CIRCLE_BRANCH
+workflows:
+  version: 2
+  test-and-deploy:
+    jobs:
+      - run-test
+      - docker-push:
+          requires:
+            - run-test
